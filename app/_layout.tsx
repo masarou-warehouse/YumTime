@@ -1,13 +1,19 @@
-import { StyleSheet, Text, View } from 'react-native'
-import { Slot, Stack } from 'expo-router'
-import React from 'react'
+import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
+
+import HomeScreen from './(tabs)/home';
+import FoodDetailScreen from './(screens)/details';
+import { RootStackParamList } from './lib/types';
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 const RootLayout = () => {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }}/>
-    </Stack>
-  )
-}
+    <Stack.Navigator>
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="FoodDetail" component={FoodDetailScreen} options={{ headerTitle: 'Food Details' }} />
+    </Stack.Navigator>
+  );
+};
 
-export default RootLayout
+export default RootLayout;
