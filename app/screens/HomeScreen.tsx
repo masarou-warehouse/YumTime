@@ -1,15 +1,23 @@
 import React from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Button, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../lib/types'; // Adjust the path as needed
 
 type HomeScreenProps = {
-  navigation: NavigationProp<RootStackParamList, 'Home'>;
+  navigation: NavigationProp<any>;
 };
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const foodItems = [
+interface FoodItem {
+  name: string;
+  image: string;
+  rating: string;
+  favorites: string;
+  price: string;
+  details: string;
+}
+
+const HomeScreen = ({ navigation }: HomeScreenProps) => {
+  const foodItems: FoodItem[] = [
     {
       name: 'Cheese vegetable pizza',
       image: 'https://example.com/cheese-vegetable-pizza.jpg',
@@ -18,7 +26,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       price: '239,000 đ',
       details: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
     },
-    // Add more food items here
+    // Add more items as needed
   ];
 
   return (
