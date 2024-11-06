@@ -1,23 +1,17 @@
 import React from 'react';
-import { View, Text, Button, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Button, Image, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Icon } from 'react-native-elements';
-import { NavigationProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { StackParamList, FoodItem } from '../navigations/type';
 
-type HomeScreenProps = {
-  navigation: NavigationProp<any>;
+type HomeScreenNavigationProp = StackNavigationProp<StackParamList, 'Home'>;
+
+type Props = {
+  navigation: HomeScreenNavigationProp;
 };
 
-interface FoodItem {
-  name: string;
-  image: string;
-  rating: string;
-  favorites: string;
-  price: string;
-  details: string;
-}
-
-const HomeScreen = ({ navigation }: HomeScreenProps) => {
-  const foodItems: FoodItem[] = [
+const HomeScreen: React.FC<Props> = ({ navigation }) => {
+  const items: FoodItem[] = [
     {
       name: 'Cheese vegetable pizza',
       image: 'https://example.com/cheese-vegetable-pizza.jpg',
@@ -31,34 +25,55 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.searchBar}>
-        <Icon name="search" size={24} />
-        <Text style={styles.searchText}>Search for any foods</Text>
+      <View style={styles.searchBarContainer}>
+        <View style={styles.searchBar}>
+          <Icon name="search" size={24} color="#888" />
+          <TextInput style={styles.searchInput} placeholder="Search for any foods" placeholderTextColor="#888" />
+        </View>
       </View>
       <View style={styles.categoryContainer}>
         <TouchableOpacity style={styles.category}>
-          <Icon name="restaurant" size={30} />
-          <Text>All</Text>
+          <Icon name="restaurant" size={30} color="#FF4500" />
+          <Text style={styles.categoryText}>All</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="local-pizza" size={30} />
-          <Text>Pizza</Text>
+          <Icon name="local-pizza" size={30} color="#888" />
+          <Text style={styles.categoryText}>Pizza</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="fastfood" size={30} />
-          <Text>Fast food</Text>
+          <Icon name="fastfood" size={30} color="#888" />
+          <Text style={styles.categoryText}>Fast food</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="emoji-food-beverage" size={30} />
-          <Text>Sea food</Text>
+          <Icon name="emoji-food-beverage" size={30} color="#888" />
+          <Text style={styles.categoryText}>Sea food</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="local-drink" size={30} />
-          <Text>Drinks</Text>
+          <Icon name="local-drink" size={30} color="#888" />
+          <Text style={styles.categoryText}>Drinks</Text>
         </TouchableOpacity>
       </View>
       <Text style={styles.sectionTitle}>Most popular</Text>
-      {foodItems.map((item, index) => (
+      {items.map((item, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.itemContainer}
+          onPress={() => navigation.navigate('FoodDetail', { item })}
+        >
+          <Image source={{ uri: item.image }} style={styles.itemImage} />
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemPrice}>{item.price}</Text>
+            <Text style={styles.itemRating}>{item.rating} ({item.favorites} favorites)</Text>
+            <TouchableOpacity style={styles.addToCartButton}>
+              <Text style={styles.addToCartText}>Add to cart</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      ))}
+      <Text style={styles.sectionTitle}>Best choice</Text>
+      {/* Repeat the food items or create another list for "Best choice" */}
+      {items.map((item, index) => (
         <TouchableOpacity
           key={index}
           style={styles.itemContainer}
@@ -83,7 +98,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingHorizontal: 10,
+  },
+  searchBarContainer: {
     paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   searchBar: {
     flexDirection: 'row',
@@ -91,35 +111,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 25,
     paddingHorizontal: 15,
-    marginVertical: 10,
   },
-  searchText: {
+  searchInput: {
     marginLeft: 10,
-    color: '#aaa',
+    flex: 1,
+    color: '#333',
   },
   categoryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 10,
+    paddingHorizontal: 20,
   },
   category: {
     alignItems: 'center',
+  },
+  categoryText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 5,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginVertical: 10,
+    paddingHorizontal: 20,
   },
   itemContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#333',
     borderRadius: 10,
     overflow: 'hidden',
     marginVertical: 10,
+    marginHorizontal: 20,
   },
   itemImage: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
   },
   itemInfo: {
     flex: 1,
@@ -128,16 +156,17 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#fff',
   },
   itemPrice: {
-    color: '#888',
+    color: '#fff',
     marginVertical: 5,
   },
   itemRating: {
-    color: '#888',
+    color: '#fff',
   },
   addToCartButton: {
-    backgroundColor: '#ff6347',
+    backgroundColor: '#FF4500',
     borderRadius: 25,
     alignItems: 'center',
     paddingVertical: 5,

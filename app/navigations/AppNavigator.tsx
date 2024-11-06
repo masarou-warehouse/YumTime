@@ -3,14 +3,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen, CartScreen, ProfileScreen, LoginScreen, FoodDetailScreen } from '../screens';
-import { useAuth } from '../auth/useAuth';
+import useAuth from '../auth/useAuth';
+import { StackParamList } from './type';
 
-type RootStackParamList = {
-  AppTabs: undefined;
-  FoodDetail: undefined; // Add any parameters if needed
-};
-
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator<StackParamList>();
 const Tab = createBottomTabNavigator();
 
 const AuthStack = () => (
@@ -19,29 +15,28 @@ const AuthStack = () => (
   </Stack.Navigator>
 );
 
-const AppTabs = () => (
-  <Tab.Navigator>
-    <Tab.Screen name="Home" component={HomeScreen} />
-    <Tab.Screen name="Cart" component={CartScreen} />
-    <Tab.Screen name="Profile" component={ProfileScreen} />
-  </Tab.Navigator>
-);
-
 const AppNavigator = () => {
-  const { user } = useAuth();
-
+  const user  = useAuth();
+  if (user) {
+    return (
+      <NavigationContainer>
+          <Stack.Navigator initialRouteName='Home'>
+            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="FoodDetail" component={FoodDetailScreen} options={{ headerShown: false }} />
+          </Stack.Navigator>
+      </NavigationContainer>
+    );
+  } else {
   return (
     <NavigationContainer>
-      {user ? (
-        <Stack.Navigator>
-          <Stack.Screen name="AppTabs" component={AppTabs} options={{ headerShown: false }} />
-          <Stack.Screen name="FoodDetail" component={FoodDetailScreen} options={{ headerShown: false }}/>
+        <Stack.Navigator initialRouteName='Login'>
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
-      ) : (
-        <AuthStack />
-      )}
-    </NavigationContainer>
-  );
+      </NavigationContainer>
+    );
+  }
 };
 
 export default AppNavigator;

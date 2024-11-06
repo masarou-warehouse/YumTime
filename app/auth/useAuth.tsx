@@ -1,34 +1,23 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { onAuthStateChanged } from '@react-native-firebase/auth';
+import { auth } from '../config/firebase';
 
-interface AuthContextType {
-  user: FirebaseAuthTypes.User | null;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+export default function useAuth(){
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged((user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      console.log('user: ', user);
+      if(user) {
+        setUser(user);
+      } else {
+        setUser(null);
+      }
     });
-
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ user }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  return { user };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+}
