@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen, CartScreen, ProfileScreen, LoginScreen, FoodDetailScreen } from '../screens';
-import useAuth from '../auth/useAuth';
+import { useAuth } from '../auth/useAuth';
 import { StackParamList } from './type';
 
 const Stack = createStackNavigator<StackParamList>();
