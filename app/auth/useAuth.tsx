@@ -1,12 +1,13 @@
 // useAuth.tsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import firebase from '@react-native-firebase/app';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 
 type AuthContextType = {
   user: FirebaseAuthTypes.User | null;
   signIn: (email: string, password: string) => Promise<FirebaseAuthTypes.UserCredential>;
-  signUp: (email: string, password: string) => Promise<FirebaseAuthTypes.UserCredential>;
+  signUp: (email: string, password: string, displayName: string, profileImage: string | null) => Promise<FirebaseAuthTypes.UserCredential>;
   signOut: () => Promise<void>;
 };
 
@@ -25,18 +26,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged((userState) => {
+    const unsubscribe = auth().onAuthStateChanged(async (userState) => {
+      if (userState) {
+        const userDoc = await firestore().collection('users').doc(userState.uid).get();
+        if (userDoc.exists) {
+          // You can set additional user data here if needed
+        }
+      }
       setUser(userState);
     });
     return unsubscribe;
   }, []);
 
-  const signIn = (email: string, password: string) => {
-    return auth().signInWithEmailAndPassword(email, password);
+  const signIn = async (email: string, password: string) => {
+    const userCredential = await auth().signInWithEmailAndPassword(email, password);
+    return userCredential;
   };
 
-  const signUp = (email: string, password: string) => {
-    return auth().createUserWithEmailAndPassword(email, password);
+  const signUp = async (email: string, password: string, displayName: string, profileImage: string | null) => {
+    const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+    const { uid } = userCredential.user;
+
+    let photoURL = null;
+    if (profileImage) {
+      const response = await fetch(profileImage);
+      const blob = await response.blob();
+      const storageRef = storage().ref().child(`profileImages/${uid}`);
+      await storageRef.put(blob);
+      photoURL = await storageRef.getDownloadURL();
+    }
+
+    // Update user profile
+    await userCredential.user.updateProfile({
+      displayName: displayName,
+      photoURL: photoURL,
+    });
+
+    // Save additional user info in Firestore
+    await firestore().collection('users').doc(uid).set({
+      displayName: displayName,
+      email: email,
+      photoURL: photoURL,
+    });
+
+    return userCredential;
   };
 
   const signOut = () => {

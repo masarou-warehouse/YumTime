@@ -1,43 +1,60 @@
-import React from 'react';
-import { View, Text, Button, Image, Touchable, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import auth from '@react-native-firebase/auth';
-// import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { useAuth } from '../auth/useAuth';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { StackParamList } from '../navigations/type';
 
-const LoginScreen = () => {
-  // const handleGoogleLogin = async () => {
-  //   try {
-  //     await GoogleSignin.signIn();
-  //     const { idToken } = await GoogleSignin.getTokens();
-  //     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-  //     await auth().signInWithCredential(googleCredential);
-  //   } catch (error) {
-  //     console.log('Google Signin Error', error);
-  //   }
-  // };
+type LoginScreenNavigationProp = StackNavigationProp<StackParamList, 'Login'>;
+
+type Props = {
+  navigation: LoginScreenNavigationProp;
+};
+
+const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const { signIn } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      console.log('Login Error', error);
+    }
+  };
 
   return (
-    <SafeAreaView className='flex-1' style={{backgroundColor: '#fff'}}>
-      <View className='flex-1 flex justify-around my-4'>
-        <Text className='text-black font-bold text-3xl text-center'>
-          YUMTIME
+    <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
+      <View style={{flex: 1, justifyContent: 'center', paddingHorizontal: 20}}>
+        <Text style={{textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginBottom: 20}}>
+          Login
         </Text>
-        <View className='flex-row justify-center'>
-          <Image
-            style={{width: 500, height: 350}}
-            source={require('../../assets/CONTAINER.png')}
-          />
-        </View>
-        <Text className='text-black font-bold text-xl text-center'>
-          WHAT'S YOUR FAVOURITE FOOD?
-        </Text>
-        <View className="space-y-4">
-          <TouchableOpacity className="py-3 bg-orange-400 mx-7 rounded-xl">
-            <Text className="text-white text-center font-bold text-xl">
-            Sign Up with Google
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TextInput
+          placeholder="Email"
+          onChangeText={setEmail}
+          value={email}
+          style={{borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10}}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          placeholder="Password"
+          onChangeText={setPassword}
+          value={password}
+          style={{borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 20}}
+          secureTextEntry
+        />
+        <TouchableOpacity onPress={handleLogin} style={{backgroundColor: '#ff8c00', padding: 15, borderRadius: 10}}>
+          <Text style={{color: '#fff', textAlign: 'center', fontSize: 16, fontWeight: 'bold'}}>
+            Login
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+          <Text style={{ textAlign: 'center', color: '#ff8c00', marginTop: 20 }}>
+            Don't have an account? Sign Up
+          </Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

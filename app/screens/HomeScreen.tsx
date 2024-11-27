@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, Button, Image, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { Icon } from 'react-native-elements';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList, FoodItem } from '../navigations/type';
+import { useCart } from '../context/CartContext';
 
 type HomeScreenNavigationProp = StackNavigationProp<StackParamList, 'Home'>;
 
@@ -23,33 +24,39 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     // Add more items as needed
   ];
 
+  const { addToCart } = useCart();
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBar}>
-          <Icon name="search" size={24} color="#888" />
-          <TextInput style={styles.searchInput} placeholder="Search for any foods" placeholderTextColor="#888" />
+          <Ionicons name="search" size={24} color="#888" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for any foods"
+            placeholderTextColor="#888"
+          />
         </View>
       </View>
       <View style={styles.categoryContainer}>
         <TouchableOpacity style={styles.category}>
-          <Icon name="restaurant" size={30} color="#FF4500" />
+          <Ionicons name="restaurant" size={30} color="#FF4500" />
           <Text style={styles.categoryText}>All</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="local-pizza" size={30} color="#888" />
+          <Ionicons name="pizza" size={30} color="#888" />
           <Text style={styles.categoryText}>Pizza</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="fastfood" size={30} color="#888" />
+          <Ionicons name="fast-food" size={30} color="#888" />
           <Text style={styles.categoryText}>Fast food</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="emoji-food-beverage" size={30} color="#888" />
+          <Ionicons name="fish" size={30} color="#888" />
           <Text style={styles.categoryText}>Sea food</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Icon name="local-drink" size={30} color="#888" />
+          <Ionicons name="local-drink" size={30} color="#888" />
           <Text style={styles.categoryText}>Drinks</Text>
         </TouchableOpacity>
       </View>
@@ -65,7 +72,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemPrice}>{item.price}</Text>
             <Text style={styles.itemRating}>{item.rating} ({item.favorites} favorites)</Text>
-            <TouchableOpacity style={styles.addToCartButton}>
+            <TouchableOpacity
+              style={styles.addToCartButton}
+              onPress={() => addToCart(item)}
+            >
               <Text style={styles.addToCartText}>Add to cart</Text>
             </TouchableOpacity>
           </View>
@@ -84,12 +94,16 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemPrice}>{item.price}</Text>
             <Text style={styles.itemRating}>{item.rating} ({item.favorites} favorites)</Text>
-            <TouchableOpacity style={styles.addToCartButton}>
+            <TouchableOpacity
+              style={styles.addToCartButton}
+              onPress={() => addToCart(item)}
+            >
               <Text style={styles.addToCartText}>Add to cart</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       ))}
+      {/* Remove the manually added Profile button */}
     </ScrollView>
   );
 };
@@ -99,6 +113,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 10,
+    padding: 20,
   },
   searchBarContainer: {
     paddingHorizontal: 20,
