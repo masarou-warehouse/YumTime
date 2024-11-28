@@ -5,6 +5,7 @@ import { RouteProp } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
 import { StackParamList, FoodItem } from '../navigations/type';
+import { useCart } from '../context/CartContext';
 
 // type FoodDetailScreenRouteProp = RouteProp<RootStackParamList, 'FoodDetail'>;
 
@@ -20,6 +21,12 @@ type Props = StackScreenProps<StackParamList, 'FoodDetail'>;
 
 const FoodDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { item } = route.params;
+  const { addToCart } = useCart();
+
+  const handleAddToCart = () => {
+    addToCart(item);
+    navigation.navigate('Cart');
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -45,7 +52,7 @@ const FoodDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <Text style={styles.priceLabel}>Current price:</Text>
         <Text style={styles.price}>{item.price}</Text>
       </View>
-      <TouchableOpacity style={styles.addToCartButton}>
+      <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
         <Text style={styles.addToCartText}>Add to cart</Text>
       </TouchableOpacity>
     </ScrollView>

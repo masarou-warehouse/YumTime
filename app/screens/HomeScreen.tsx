@@ -56,7 +56,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.categoryText}>Sea food</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.category}>
-          <Ionicons name="local-drink" size={30} color="#888" />
+          <Ionicons name="cafe" size={30} color="#888" />
           <Text style={styles.categoryText}>Drinks</Text>
         </TouchableOpacity>
       </View>
