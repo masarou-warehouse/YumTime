@@ -1,83 +1,91 @@
 // useAuth.tsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
+import { 
+  User, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut as firebaseSignOut, 
+  onAuthStateChanged, 
+  updateProfile 
+} from 'firebase/auth';
+import { FIREBASE_AUTH, FIRESTORE, FIREBASE_STORAGE } from '../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 type AuthContextType = {
-  user: FirebaseAuthTypes.User | null;
-  signIn: (email: string, password: string) => Promise<FirebaseAuthTypes.UserCredential>;
-  signUp: (email: string, password: string, displayName: string, profileImage: string | null) => Promise<FirebaseAuthTypes.UserCredential>;
+  user: User | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (
+    email: string, 
+    password: string, 
+    displayName: string, 
+    profileImage: string | null
+  ) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  signIn: async () => {
-    throw new Error('signIn function not implemented');
-  },
-  signUp: async () => {
-    throw new Error('signUp function not implemented');
-  },
+  signIn: async () => {},
+  signUp: async () => {},
   signOut: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(async (userState) => {
-      if (userState) {
-        const userDoc = await firestore().collection('users').doc(userState.uid).get();
-        if (userDoc.exists) {
-          // You can set additional user data here if needed
-        }
-      }
-      setUser(userState);
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+      setUser(currentUser);
     });
     return unsubscribe;
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const userCredential = await auth().signInWithEmailAndPassword(email, password);
-    return userCredential;
+    await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
+    // User state is automatically handled by onAuthStateChanged
   };
 
-  const signUp = async (email: string, password: string, displayName: string, profileImage: string | null) => {
-    const userCredential = await auth().createUserWithEmailAndPassword(email, password);
-    const { uid } = userCredential.user;
+  const signUp = async (
+    email: string, 
+    password: string, 
+    displayName: string, 
+    profileImage: string | null
+  ) => {
+    const userCredential = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
+    const currentUser = userCredential.user;
 
-    let photoURL = null;
+    let photoURL: string | null = null;
+
     if (profileImage) {
       const response = await fetch(profileImage);
       const blob = await response.blob();
-      const storageRef = storage().ref().child(`profileImages/${uid}`);
-      await storageRef.put(blob);
-      photoURL = await storageRef.getDownloadURL();
+      const storageRef = ref(FIREBASE_STORAGE, `profileImages/${currentUser.uid}`);
+      await uploadBytes(storageRef, blob);
+      photoURL = await getDownloadURL(storageRef);
     }
 
     // Update user profile
-    await userCredential.user.updateProfile({
-      displayName: displayName,
-      photoURL: photoURL,
+    await updateProfile(currentUser, {
+      displayName,
+      photoURL: photoURL || undefined,
     });
 
-    // Save additional user info in Firestore
-    await firestore().collection('users').doc(uid).set({
-      displayName: displayName,
-      email: email,
-      photoURL: photoURL,
+    // Save additional user info to Firestore
+    await setDoc(doc(FIRESTORE, 'users', currentUser.uid), {
+      displayName,
+      email,
+      photoURL: photoURL || null,
     });
-
-    return userCredential;
   };
 
-  const signOut = () => {
-    return auth().signOut();
+  const signOutUser = async () => {
+    await firebaseSignOut(FIREBASE_AUTH);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, signIn, signUp, signOut: signOutUser }}>
       {children}
     </AuthContext.Provider>
   );

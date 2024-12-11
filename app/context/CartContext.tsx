@@ -1,5 +1,6 @@
 // CartContext.tsx
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FoodItem } from '../navigations/type';
 
 type CartContextType = {
@@ -18,6 +19,33 @@ const CartContext = createContext<CartContextType>({
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<FoodItem[]>([]);
+
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        const storedCart = await AsyncStorage.getItem('@cart');
+        if (storedCart) {
+          setCartItems(JSON.parse(storedCart));
+        }
+      } catch (error) {
+        console.log('Error loading cart:', error);
+      }
+    };
+
+    loadCart();
+  }, []);
+
+  useEffect(() => {
+    const saveCart = async () => {
+      try {
+        await AsyncStorage.setItem('@cart', JSON.stringify(cartItems));
+      } catch (error) {
+        console.log('Error saving cart:', error);
+      }
+    };
+
+    saveCart();
+  }, [cartItems]);
 
   const addToCart = (item: FoodItem) => {
     setCartItems([...cartItems, item]);

@@ -1,44 +1,26 @@
 // SignUpScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Image, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Image, Platform, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../auth/useAuth';
 import * as ImagePicker from 'expo-image-picker';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { FIREBASE_AUTH } from '../config/firebase';
 
 const SignUpScreen = () => {
-  const { signUp } = useAuth();
+  // const { signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  // const [displayName, setDisplayName] = useState('');
+  // const [profileImage, setProfileImage] = useState<string | null>(null);
+  const auth = FIREBASE_AUTH;
 
   const handleSignUp = async () => {
     try {
-      await signUp(email, password, displayName, profileImage);
-    } catch (error) {
+      const response = await createUserWithEmailAndPassword(auth, email, password);
+      Alert.alert('Success', 'Account created successfully!');
+    } catch (error: any) {
       console.log('Sign Up Error', error);
-    }
-  };
-
-  const pickImage = async () => {
-    // Request media library permissions
-    if (Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        alert('Permission denied!');
-        return;
-      }
-    }
-
-    // Launch image picker
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.5,
-      allowsEditing: true,
-    });
-
-    if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
+      Alert.alert('Sign Up Error', error.message || 'An error occurred during sign up.');
     }
   };
 
@@ -48,12 +30,12 @@ const SignUpScreen = () => {
         <Text style={{ textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>
           Sign Up
         </Text>
-        <TextInput
+        {/* <TextInput
           placeholder="Name"
           onChangeText={setDisplayName}
           value={displayName}
           style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10 }}
-        />
+        /> */}
         <TextInput
           placeholder="Email"
           onChangeText={setEmail}
@@ -69,14 +51,14 @@ const SignUpScreen = () => {
           style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10 }}
           secureTextEntry
         />
-        <TouchableOpacity onPress={pickImage} style={{ marginBottom: 20 }}>
+        {/* <TouchableOpacity onPress={pickImage} style={{ marginBottom: 20 }}>
           <Text style={{ color: '#ff8c00', textAlign: 'center' }}>
             {profileImage ? 'Change Profile Image' : 'Add Profile Image'}
           </Text>
         </TouchableOpacity>
         {profileImage && (
           <Image source={{ uri: profileImage }} style={{ width: 100, height: 100, alignSelf: 'center', marginBottom: 20, borderRadius: 50 }} />
-        )}
+        )} */}
         <TouchableOpacity onPress={handleSignUp} style={{ backgroundColor: '#ff8c00', padding: 15, borderRadius: 10 }}>
           <Text style={{ color: '#fff', textAlign: 'center', fontSize: 16, fontWeight: 'bold' }}>
             Sign Up
