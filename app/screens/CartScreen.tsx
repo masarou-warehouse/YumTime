@@ -2,7 +2,8 @@
 import React from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../auth/useAuth';
+import { FIREBASE_AUTH } from '../config/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList } from '../navigations/type';
 
@@ -14,7 +15,7 @@ type Props = {
 
 const CartScreen: React.FC<Props> = ({ navigation }) => {
   const { cartItems, removeFromCart, clearCart } = useCart();
-  const { user } = useAuth();
+  const user = FIREBASE_AUTH.currentUser;
 
   const handleCheckout = () => {
     if (user) {
@@ -73,6 +74,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,

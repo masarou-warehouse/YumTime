@@ -5,13 +5,14 @@ import {
   Text, 
   TouchableOpacity, 
   Image, 
-  StyleSheet 
+  StyleSheet,
+  Alert 
 } from 'react-native';
-import { useAuth } from '../auth/useAuth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList } from '../navigations/type';
-import { FIRESTORE } from '../config/firebase';
+import { FIRESTORE, FIREBASE_AUTH } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { signOut, onAuthStateChanged, User } from 'firebase/auth';
 
 type ProfileScreenNavigationProp = StackNavigationProp<StackParamList, 'Profile'>;
 
@@ -20,21 +21,22 @@ type Props = {
 };
 
 type UserData = {
-  displayName: string;
+  username: string;
   email: string;
-  photoURL: string | null;
+  profileImageURL: string | null;
 };
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, signOut } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (user) {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
         try {
-          const docRef = doc(FIRESTORE, 'users', user.uid);
+          const docRef = doc(FIRESTORE, 'users', currentUser.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             setUserData(docSnap.data() as UserData);
@@ -46,10 +48,21 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         }
       }
       setLoading(false);
-    };
+    });
 
-    fetchUserData();
-  }, [user]);
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(FIREBASE_AUTH);
+      navigation.navigate('Login');
+    } catch (error: any) {
+      console.log('Sign Out Error', error);
+      Alert.alert('Error', 'Failed to sign out.');
+    }
+  };
 
   if (loading) {
     return (
@@ -75,18 +88,18 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {userData?.photoURL ? (
-        <Image source={{ uri: userData.photoURL }} style={styles.profileImage} />
+      {userData?.profileImageURL ? (
+        <Image source={{ uri: userData.profileImageURL }} style={styles.profileImage} />
       ) : (
         <View style={styles.placeholderImage}>
           <Text style={styles.placeholderText}>
-            {userData?.displayName?.charAt(0).toUpperCase() || 'U'}
+            {userData?.username?.charAt(0).toUpperCase() || 'U'}
           </Text>
         </View>
       )}
-      <Text style={styles.name}>{userData?.displayName || 'No Name'}</Text>
+      <Text style={styles.name}>{userData?.username || 'No Name'}</Text>
       <Text style={styles.email}>{userData?.email}</Text>
-      <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
+      <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
     </View>

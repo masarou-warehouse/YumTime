@@ -1,8 +1,7 @@
 // LoginScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// import { useAuth } from '../auth/useAuth';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -15,26 +14,35 @@ type Props = {
 };
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-
-  // const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const auth = FIREBASE_AUTH;
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      setMessage({ type: 'error', text: 'Please enter both email and password.' });
+      return;
+    }
+
     try {
-      const response = await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert('Success', 'Logged in successfully!');
-      navigation.navigate('Home');
+      await signInWithEmailAndPassword(auth, email, password);
+      setMessage({ type: 'success', text: 'Logged in successfully!' });
+      navigation.replace('Profile');
     } catch (error: any) {
       console.log('Login Error', error);
-      Alert.alert('Login Error', error.message || 'An error occurred during login.');
+      setMessage({ type: 'error', text: error.message || 'An error occurred during login.' });
     }
   };
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
       <View style={styles.container}>
+        {message && (
+          <View style={[styles.messageBox, message.type === 'success' ? styles.success : styles.error]}>
+            <Text style={styles.messageText}>{message.text}</Text>
+          </View>
+        )}
         <Text style={styles.title}>Login</Text>
         <TextInput
           placeholder="Email"
@@ -64,12 +72,55 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 20 },
-  title: { textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 20 },
-  button: { backgroundColor: '#ff8c00', padding: 15, borderRadius: 10, marginBottom: 10 },
-  buttonText: { color: '#fff', textAlign: 'center', fontSize: 16, fontWeight: 'bold' },
-  linkText: { textAlign: 'center', color: '#ff8c00', marginTop: 20 },
+  messageBox: {
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+  },
+  success: {
+    backgroundColor: '#d4edda',
+  },
+  error: {
+    backgroundColor: '#f8d7da',
+  },
+  messageText: {
+    color: '#155724',
+    textAlign: 'center',
+  },
+  container: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    paddingHorizontal: 20 
+  },
+  title: { 
+    textAlign: 'center', 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 20 
+  },
+  input: { 
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    padding: 10, 
+    marginBottom: 20 
+  },
+  button: { 
+    backgroundColor: '#ff8c00', 
+    padding: 15, 
+    borderRadius: 10, 
+    marginBottom: 10 
+  },
+  buttonText: { 
+    color: '#fff', 
+    textAlign: 'center', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  linkText: { 
+    textAlign: 'center', 
+    color: '#ff8c00', 
+    marginTop: 20 
+  },
 });
 
 export default LoginScreen;
