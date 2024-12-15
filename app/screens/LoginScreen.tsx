@@ -1,7 +1,14 @@
 // LoginScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  TextInput, 
+  StyleSheet, 
+  Alert, 
+  SafeAreaView 
+} from 'react-native';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -13,34 +20,59 @@ type Props = {
   navigation: LoginScreenNavigationProp;
 };
 
+type MessageType = {
+  type: 'success' | 'error';
+  text: string;
+} | null;
+
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [message, setMessage] = useState<MessageType>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const auth = FIREBASE_AUTH;
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!email.trim() || !password.trim()) {
       setMessage({ type: 'error', text: 'Please enter both email and password.' });
       return;
     }
 
+    setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setMessage({ type: 'success', text: 'Logged in successfully!' });
-      navigation.replace('Profile');
+      await signInWithEmailAndPassword(auth, email.trim(), password.trim());
+      setMessage({ type: 'success', text: 'Logged in successfully! Redirecting...' });
+
+      // Wait for 2 seconds before navigating
+      setTimeout(() => {
+        navigation.navigate('Profile');
+      }, 2000);
     } catch (error: any) {
       console.log('Login Error', error);
       setMessage({ type: 'error', text: error.message || 'An error occurred during login.' });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {message && (
-          <View style={[styles.messageBox, message.type === 'success' ? styles.success : styles.error]}>
-            <Text style={styles.messageText}>{message.text}</Text>
+          <View 
+            style={[
+              styles.messageBox, 
+              message.type === 'success' ? styles.success : styles.error
+            ]}
+          >
+            <Text 
+              style={[
+                styles.messageText, 
+                message.type === 'success' ? styles.successText : styles.errorText
+              ]}
+            >
+              {message.text}
+            </Text>
           </View>
         )}
         <Text style={styles.title}>Login</Text>
@@ -60,10 +92,16 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.input}
           secureTextEntry
         />
-        <TouchableOpacity onPress={handleLogin} style={styles.button}>
-          <Text style={styles.buttonText}>Login</Text>
+        <TouchableOpacity 
+          onPress={handleLogin} 
+          style={[styles.button, loading && styles.buttonDisabled]}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'Logging In...' : 'Login'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+        <TouchableOpacity onPress={() => navigation.navigate('SignUp')} style={styles.link}>
           <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
         </TouchableOpacity>
       </View>
@@ -72,6 +110,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    paddingHorizontal: 20 
+  },
   messageBox: {
     padding: 10,
     borderRadius: 5,
@@ -83,14 +130,15 @@ const styles = StyleSheet.create({
   error: {
     backgroundColor: '#f8d7da',
   },
-  messageText: {
+  successText: {
     color: '#155724',
-    textAlign: 'center',
   },
-  container: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    paddingHorizontal: 20 
+  errorText: {
+    color: '#721c24',
+  },
+  messageText: {
+    textAlign: 'center',
+    fontSize: 16,
   },
   title: { 
     textAlign: 'center', 
@@ -102,7 +150,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, 
     borderColor: '#ccc', 
     padding: 10, 
-    marginBottom: 20 
+    marginBottom: 20,
+    borderRadius: 5,
+    color: '#333',
   },
   button: { 
     backgroundColor: '#ff8c00', 
@@ -110,16 +160,22 @@ const styles = StyleSheet.create({
     borderRadius: 10, 
     marginBottom: 10 
   },
+  buttonDisabled: {
+    backgroundColor: '#ffa366',
+  },
   buttonText: { 
     color: '#fff', 
     textAlign: 'center', 
     fontSize: 16, 
     fontWeight: 'bold' 
   },
+  link: { 
+    marginTop: 20, 
+    alignItems: 'center' 
+  },
   linkText: { 
-    textAlign: 'center', 
     color: '#ff8c00', 
-    marginTop: 20 
+    fontSize: 16 
   },
 });
 

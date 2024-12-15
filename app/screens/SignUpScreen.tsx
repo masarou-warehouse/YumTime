@@ -1,6 +1,6 @@
 // SignUpScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Image, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -16,12 +16,18 @@ type Props = {
   navigation: SignUpScreenNavigationProp;
 };
 
+type MessageType = {
+  type: 'success' | 'error';
+  text: string;
+} | null;
+
 const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<MessageType>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const auth = FIREBASE_AUTH;
 
   const pickImage = async () => {
@@ -44,13 +50,14 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSignUp = async () => {
-    if (!email || !password || !username) {
+    if (!username.trim() || !email.trim() || !password.trim()) {
       setMessage({ type: 'error', text: 'Please fill in all fields.' });
       return;
     }
 
+    setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
       const user = userCredential.user;
 
       let profileImageURL = '';
@@ -63,22 +70,28 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
       }
 
       await setDoc(doc(FIRESTORE, 'users', user.uid), {
-        username,
-        email,
+        username: username.trim(),
+        email: email.trim(),
         profileImageURL,
       });
 
       setMessage({ type: 'success', text: 'Account created successfully!' });
-      navigation.navigate('Profile');
+
+      setTimeout(() => {
+        navigation.navigate('Profile');
+      }, 2000);
+
     } catch (error: any) {
-      console.log('Sign Up Error', error);
+      console.error('Sign Up Error', error);
       setMessage({ type: 'error', text: error.message || 'An error occurred during sign up.' });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20 }}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
         {message && (
           <View style={[styles.messageBox, message.type === 'success' ? styles.success : styles.error]}>
             <Text style={styles.messageText}>{message.text}</Text>
@@ -99,6 +112,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.input}
           keyboardType="email-address"
           autoCapitalize="none"
+          autoCorrect={false}
         />
         <TextInput
           placeholder="Password"
@@ -115,8 +129,14 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
         {profileImage && (
           <Image source={{ uri: profileImage }} style={styles.profileImage} />
         )}
-        <TouchableOpacity onPress={handleSignUp} style={styles.button}>
-          <Text style={styles.buttonText}>Sign Up</Text>
+        <TouchableOpacity 
+          onPress={handleSignUp} 
+          style={[styles.button, loading && styles.buttonDisabled]}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'Signing Up...' : 'Sign Up'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -124,6 +144,15 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    paddingHorizontal: 20 
+  },
   messageBox: {
     padding: 10,
     borderRadius: 5,
@@ -162,6 +191,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff8c00', 
     padding: 15, 
     borderRadius: 10 
+  },
+  buttonDisabled: {
+    backgroundColor: '#ffa366',
   },
   buttonText: { 
     color: '#fff', 

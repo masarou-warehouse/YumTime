@@ -3,7 +3,6 @@ import React from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useCart } from '../context/CartContext';
 import { FIREBASE_AUTH } from '../config/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList } from '../navigations/type';
 

@@ -8,11 +8,12 @@ export type StackParamList = {
     Checkout: undefined;
 };
   
-export interface FoodItem {
+export type FoodItem = {
+    id: string;
     name: string;
     image: string;
     rating: string;
     favorites: string;
     price: string;
     details: string;
-}
+  };

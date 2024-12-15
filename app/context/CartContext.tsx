@@ -48,11 +48,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [cartItems]);
 
   const addToCart = (item: FoodItem) => {
-    setCartItems([...cartItems, item]);
+    setCartItems(prevItems => [...prevItems, item]);
   };
 
   const removeFromCart = (item: FoodItem) => {
-    setCartItems(cartItems.filter(cartItem => cartItem.name !== item.name));
+    setCartItems(prevItems => prevItems.filter(cartItem => cartItem.name !== item.name));
   };
 
   const clearCart = () => {

@@ -13,6 +13,7 @@ import { StackParamList } from '../navigations/type';
 import { FIRESTORE, FIREBASE_AUTH } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut, onAuthStateChanged, User } from 'firebase/auth';
+import NetInfo from '@react-native-community/netinfo';
 
 type ProfileScreenNavigationProp = StackNavigationProp<StackParamList, 'Profile'>;
 
@@ -30,9 +31,14 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
+  const [isOffline, setIsOffline] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
+    const unsubscribeNetInfo = NetInfo.addEventListener(state => {
+      setIsOffline(!state.isConnected);
+    });
+
+    const unsubscribeAuth = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         try {
@@ -45,13 +51,16 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           }
         } catch (error) {
           console.log('Error fetching user data:', error);
+          Alert.alert('Error', 'Unable to fetch user data.');
         }
       }
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      unsubscribeNetInfo();
+    };
   }, []);
 
   const handleSignOut = async () => {
@@ -68,6 +77,14 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <View style={styles.container}>
         <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (isOffline) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>You are offline. Please check your internet connection.</Text>
       </View>
     );
   }

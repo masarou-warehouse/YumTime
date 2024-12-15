@@ -1,23 +1,12 @@
+// FoodDetailScreen.tsx
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Icon } from 'react-native-elements';
-import { RouteProp } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ParamListBase } from '@react-navigation/native';
-import { StackParamList, FoodItem } from '../navigations/type';
+import { StackParamList } from '../navigations/type';
 import { useCart } from '../context/CartContext';
 
-// type FoodDetailScreenRouteProp = RouteProp<RootStackParamList, 'FoodDetail'>;
-
-// type FoodDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'FoodDetail'>;
-
-// type Props = {
-//   route: FoodDetailScreenRouteProp;
-//   navigation: FoodDetailScreenNavigationProp;
-// };
-
 type Props = StackScreenProps<StackParamList, 'FoodDetail'>;
-
 
 const FoodDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { item } = route.params;

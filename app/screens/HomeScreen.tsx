@@ -1,9 +1,21 @@
-import React from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { 
+  FlatList, 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Image, 
+  TextInput, 
+  ActivityIndicator, 
+  StyleSheet 
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { StackParamList, FoodItem } from '../navigations/type';
+import { FIRESTORE } from '../config/firebase';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { FoodItem } from '../navigations/type';
 import { useCart } from '../context/CartContext';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { StackParamList } from '../navigations/type';
 
 type HomeScreenNavigationProp = StackNavigationProp<StackParamList, 'Home'>;
 
@@ -12,22 +24,55 @@ type Props = {
 };
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const items: FoodItem[] = [
-    {
-      name: 'Cheese vegetable pizza',
-      image: 'https://example.com/cheese-vegetable-pizza.jpg',
-      rating: '5.0',
-      favorites: '1.2k',
-      price: '239,000 đ',
-      details: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-    },
-    // Add more items as needed
-  ];
-
+  const [foods, setFoods] = useState<FoodItem[]>([]);
+  const [search, setSearch] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
   const { addToCart } = useCart();
 
+  useEffect(() => {
+    const foodsCollection = collection(FIRESTORE, 'foods');
+    const q = query(foodsCollection, orderBy('name'), limit(50)); // Adjust limit as needed
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const foodList: FoodItem[] = [];
+      snapshot.forEach(doc => {
+        foodList.push({
+          id: doc.id,
+          ...(doc.data() as Omit<FoodItem, 'id'>),
+        });
+      });
+      setFoods(foodList);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching foods:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const filteredFoods = foods.filter(food =>
+    food.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const renderItem = useCallback(({ item }: { item: FoodItem }) => (
+    <TouchableOpacity
+      style={styles.itemContainer}
+      onPress={() => navigation.navigate('FoodDetail', { item })}
+    >
+      <Image source={{ uri: item.image }} style={styles.itemImage} />
+      <View style={styles.itemInfo}>
+        <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.itemPrice}>{item.price}</Text>
+        <Text style={styles.itemRating}>
+          ⭐ {item.rating} ({item.favorites})
+        </Text>
+      </View>
+    </TouchableOpacity>
+  ), [navigation]);
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={24} color="#888" />
@@ -35,6 +80,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.searchInput}
             placeholder="Search for any foods"
             placeholderTextColor="#888"
+            value={search}
+            onChangeText={setSearch}
           />
         </View>
       </View>
@@ -60,51 +107,22 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.categoryText}>Drinks</Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.sectionTitle}>Most popular</Text>
-      {items.map((item, index) => (
-        <TouchableOpacity
-          key={index}
-          style={styles.itemContainer}
-          onPress={() => navigation.navigate('FoodDetail', { item })}
-        >
-          <Image source={{ uri: item.image }} style={styles.itemImage} />
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>{item.price}</Text>
-            <Text style={styles.itemRating}>{item.rating} ({item.favorites} favorites)</Text>
-            <TouchableOpacity
-              style={styles.addToCartButton}
-              onPress={() => addToCart(item)}
-            >
-              <Text style={styles.addToCartText}>Add to cart</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      ))}
-      <Text style={styles.sectionTitle}>Best choice</Text>
-      {/* Repeat the food items or create another list for "Best choice" */}
-      {items.map((item, index) => (
-        <TouchableOpacity
-          key={index}
-          style={styles.itemContainer}
-          onPress={() => navigation.navigate('FoodDetail', { item })}
-        >
-          <Image source={{ uri: item.image }} style={styles.itemImage} />
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>{item.price}</Text>
-            <Text style={styles.itemRating}>{item.rating} ({item.favorites} favorites)</Text>
-            <TouchableOpacity
-              style={styles.addToCartButton}
-              onPress={() => addToCart(item)}
-            >
-              <Text style={styles.addToCartText}>Add to cart</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      ))}
-      {/* Remove the manually added Profile button */}
-    </ScrollView>
+      <Text style={styles.sectionTitle}>Most Popular</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#ff8c00" />
+      ) : (
+        <FlatList
+          data={filteredFoods}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingHorizontal: 20 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+        />
+      )}
+      {/* Best Choice Section */}
+    </View>
   );
 };
 
@@ -112,8 +130,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 10,
-    padding: 20,
   },
   searchBarContainer: {
     paddingHorizontal: 20,
@@ -147,48 +163,45 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginVertical: 10,
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 10,
   },
   itemContainer: {
     flexDirection: 'row',
-    backgroundColor: '#333',
+    marginBottom: 15,
+    backgroundColor: '#fafafa',
     borderRadius: 10,
     overflow: 'hidden',
-    marginVertical: 10,
-    marginHorizontal: 20,
+    elevation: 2, // For Android
+    shadowColor: '#000', // For iOS
+    shadowOffset: { width: 0, height: 2 }, // For iOS
+    shadowOpacity: 0.1, // For iOS
+    shadowRadius: 5, // For iOS
   },
   itemImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
   },
   itemInfo: {
     flex: 1,
     padding: 10,
+    justifyContent: 'center',
   },
   itemName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
   },
   itemPrice: {
-    color: '#fff',
+    fontSize: 16,
+    color: '#888',
     marginVertical: 5,
   },
   itemRating: {
-    color: '#fff',
-  },
-  addToCartButton: {
-    backgroundColor: '#FF4500',
-    borderRadius: 25,
-    alignItems: 'center',
-    paddingVertical: 5,
-    marginTop: 10,
-  },
-  addToCartText: {
-    color: '#fff',
+    fontSize: 14,
+    color: '#555',
   },
 });
 
