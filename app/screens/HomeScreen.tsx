@@ -19,7 +19,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [search, setSearch] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All'); // 1. Add state for selected category
   const { addToCart } = useCart();
+
+  const categories = ['All', 'Pizza', 'Fast food', 'Sea food', 'Drinks']; // 2. Define categories
 
   useEffect(() => {
     const fetchFoods = async () => {
@@ -31,7 +34,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         async (snapshot) => {
           const foodList: FoodItem[] = [];
           for (const doc of snapshot.docs) {
-            const foodData = doc.data() as Omit<FoodItem, 'id' | 'image'> & { imagePath: string };
+            const foodData = doc.data() as Omit<FoodItem, 'id' | 'image'> & { imagePath: string; category: string }; // Ensure 'category' field exists
             const imagePath = foodData.imagePath; // Assuming imagePath is stored in Firestore
             let imageUrl = '';
 
@@ -66,6 +69,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const filteredFoods = foods.filter(food =>
+    (selectedCategory === 'All' || food.category === selectedCategory) && // 4. Filter by category
     food.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -95,7 +99,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
-  ), [navigation]);
+  ), [navigation, addToCart]);
 
   return (
     <View style={styles.container}>
@@ -111,30 +115,44 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </View>
       <View style={styles.categoryContainer}>
-        <TouchableOpacity style={styles.category}>
-          <Ionicons name="restaurant" size={30} color="#FF4500" />
-          <Text style={styles.categoryText}>All</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.category}>
-          <Ionicons name="pizza" size={30} color="#888" />
-          <Text style={styles.categoryText}>Pizza</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.category}>
-          <Ionicons name="fast-food" size={30} color="#888" />
-          <Text style={styles.categoryText}>Fast food</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.category}>
-          <Ionicons name="fish" size={30} color="#888" />
-          <Text style={styles.categoryText}>Sea food</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.category}>
-          <Ionicons name="cafe" size={30} color="#888" />
-          <Text style={styles.categoryText}>Drinks</Text>
-        </TouchableOpacity>
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.category,
+              selectedCategory === category && styles.categorySelected, // 5. Apply selected style
+            ]}
+            onPress={() => setSelectedCategory(category)} // 3. Handle category selection
+          >
+            <Ionicons
+              name={
+                category === 'Pizza'
+                  ? 'pizza'
+                  : category === 'Fast food'
+                  ? 'fast-food'
+                  : category === 'Sea food'
+                  ? 'fish'
+                  : category === 'Drinks'
+                  ? 'cafe'
+                  : 'restaurant'
+              }
+              size={30}
+              color={selectedCategory === category ? '#fff' : '#888'} // Change icon color based on selection
+            />
+            <Text
+              style={[
+                styles.categoryText,
+                selectedCategory === category && styles.categorySelectedText, // 5. Apply selected text style
+              ]}
+            >
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
       <Text style={styles.sectionTitle}>Most Popular</Text>
       {loading ? (
-        <ActivityIndicator size="large" color="#ff8c00" />
+        <ActivityIndicator size="large" color="#ff8c00" style={styles.loadingContainer} />
       ) : (
         <FlatList
           data={filteredFoods}
@@ -181,11 +199,21 @@ const styles = StyleSheet.create({
   },
   category: {
     alignItems: 'center',
+    padding: 10,
+    borderRadius: 15,
+    backgroundColor: '#f0f0f0',
+  },
+  categorySelected: {
+    backgroundColor: '#FF4500',
   },
   categoryText: {
     fontSize: 12,
     color: '#888',
     marginTop: 5,
+  },
+  categorySelectedText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   sectionTitle: {
     fontSize: 24,
@@ -243,6 +271,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
+    marginTop: 10,
   },
   addButtonText: {
     color: '#fff',

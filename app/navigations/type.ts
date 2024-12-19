@@ -17,4 +17,5 @@ export type FoodItem = {
     favorites: string;
     price: string;
     details: string;
+    category: string;
   };
