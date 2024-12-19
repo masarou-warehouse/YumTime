@@ -3,7 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { HomeScreen, CartScreen, ProfileScreen, LoginScreen, SignUpScreen, FoodDetailScreen } from '../screens';
+import { HomeScreen, CartScreen, ProfileScreen, LoginScreen, SignUpScreen, FoodDetailScreen, AdminScreen } from '../screens';
 import CustomTabBar from '../components/CustomTabBar';
 
 const Tab = createBottomTabNavigator();
@@ -28,6 +28,7 @@ const AppNavigator = () => {
         <Stack.Screen name="FoodDetail" component={FoodDetailScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerTitle: '' }}/>
         <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerTitle: '' }}/>
+        <Stack.Screen name="Admin" component={AdminScreen} options={{ headerTitle: '' }}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

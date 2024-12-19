@@ -6,6 +6,7 @@ export type StackParamList = {
     Cart: undefined;
     Profile: undefined;
     Checkout: undefined;
+    Admin: undefined;
 };
   
 export type FoodItem = {

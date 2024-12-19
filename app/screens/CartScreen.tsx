@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useCart } from '../context/CartContext';
 import { FIREBASE_AUTH } from '../config/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList } from '../navigations/type';
 
@@ -49,7 +50,7 @@ const CartScreen: React.FC<Props> = ({ navigation }) => {
                 <Image source={{ uri: item.image }} style={styles.itemImage} />
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>{item.price}</Text>
+                  <Text style={styles.itemPrice}>${parseFloat(item.price.replace(/,/g, '.')).toFixed(2)}</Text>
                   <TouchableOpacity onPress={() => removeFromCart(item)}>
                     <Text style={styles.removeText}>Remove</Text>
                   </TouchableOpacity>

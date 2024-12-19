@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { FIREBASE_AUTH, FIRESTORE, FIREBASE_STORAGE } from '../config/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { signOut } from 'firebase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList } from '../navigations/type';
 
@@ -26,6 +27,9 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [birthdate, setBirthdate] = useState('');
   const [message, setMessage] = useState<MessageType>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const auth = FIREBASE_AUTH;
@@ -40,7 +44,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1,1],
+      aspect: [1, 1],
       quality: 0.5,
     });
 
@@ -50,16 +54,22 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSignUp = async () => {
-    if (!username.trim() || !email.trim() || !password.trim()) {
+    if (!username.trim() || !email.trim() || !password.trim() || !phone.trim() || !address.trim() || !birthdate.trim()) {
       setMessage({ type: 'error', text: 'Please fill in all fields.' });
       return;
     }
-
+  
+    if (email.trim().endsWith('@admin.yumtime.com')) {
+      setMessage({ type: 'error', text: 'Admin emails cannot sign up through this form.' });
+      setLoading(false);
+      return;
+    }
+  
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
       const user = userCredential.user;
-
+  
       let profileImageURL = '';
       if (profileImage) {
         const response = await fetch(profileImage);
@@ -68,19 +78,26 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
         await uploadBytes(storageRef, blob);
         profileImageURL = await getDownloadURL(storageRef);
       }
-
+  
       await setDoc(doc(FIRESTORE, 'users', user.uid), {
         username: username.trim(),
         email: email.trim(),
         profileImageURL,
+        phone: phone.trim(),
+        address: address.trim(),
+        birthdate: birthdate.trim(),
       });
-
-      setMessage({ type: 'success', text: 'Account created successfully!' });
-
+  
+      setMessage({ type: 'success', text: 'Account created successfully! Please sign in.' });
+  
+      // Sign out the user after sign-up
+      await signOut(FIREBASE_AUTH);
+  
+      // Navigate to Login screen
       setTimeout(() => {
-        navigation.navigate('Profile');
+        navigation.navigate('Login');
       }, 2000);
-
+  
     } catch (error: any) {
       console.error('Sign Up Error', error);
       setMessage({ type: 'error', text: error.message || 'An error occurred during sign up.' });
@@ -98,6 +115,14 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
         <Text style={styles.title}>Sign Up</Text>
+        <TouchableOpacity onPress={pickImage} style={{ marginBottom: 20 }}>
+          <Text style={{ color: '#ff8c00', textAlign: 'center' }}>
+            {profileImage ? 'Change Profile Image' : 'Add Profile Image'}
+          </Text>
+        </TouchableOpacity>
+        {profileImage && (
+          <Image source={{ uri: profileImage }} style={styles.profileImage} />
+        )}
         <TextInput
           placeholder="Username"
           onChangeText={setUsername}
@@ -121,16 +146,27 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.input}
           secureTextEntry
         />
-        <TouchableOpacity onPress={pickImage} style={{ marginBottom: 20 }}>
-          <Text style={{ color: '#ff8c00', textAlign: 'center' }}>
-            {profileImage ? 'Change Profile Image' : 'Add Profile Image'}
-          </Text>
-        </TouchableOpacity>
-        {profileImage && (
-          <Image source={{ uri: profileImage }} style={styles.profileImage} />
-        )}
-        <TouchableOpacity 
-          onPress={handleSignUp} 
+        <TextInput
+          placeholder="Phone"
+          onChangeText={setPhone}
+          value={phone}
+          style={styles.input}
+          keyboardType="phone-pad"
+        />
+        <TextInput
+          placeholder="Address"
+          onChangeText={setAddress}
+          value={address}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Birthdate (YYYY-MM-DD)"
+          onChangeText={setBirthdate}
+          value={birthdate}
+          style={styles.input}
+        />
+        <TouchableOpacity
+          onPress={handleSignUp}
           style={[styles.button, loading && styles.buttonDisabled]}
           disabled={loading}
         >
@@ -148,10 +184,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  container: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    paddingHorizontal: 20 
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20
   },
   messageBox: {
     padding: 10,
@@ -168,38 +204,38 @@ const styles = StyleSheet.create({
     color: '#155724',
     textAlign: 'center',
   },
-  title: { 
-    textAlign: 'center', 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginBottom: 20 
+  title: {
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20
   },
-  input: { 
-    borderWidth: 1, 
-    borderColor: '#ccc', 
-    padding: 10, 
-    marginBottom: 10 
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    marginBottom: 10
   },
-  profileImage: { 
-    width: 100, 
-    height: 100, 
-    alignSelf: 'center', 
-    marginBottom: 20, 
-    borderRadius: 50 
+  profileImage: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+    marginBottom: 20,
+    borderRadius: 50
   },
-  button: { 
-    backgroundColor: '#ff8c00', 
-    padding: 15, 
-    borderRadius: 10 
+  button: {
+    backgroundColor: '#ff8c00',
+    padding: 15,
+    borderRadius: 10
   },
   buttonDisabled: {
     backgroundColor: '#ffa366',
   },
-  buttonText: { 
-    color: '#fff', 
-    textAlign: 'center', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  buttonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: 'bold'
   },
 });
 

@@ -1,21 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { 
-  FlatList, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  Image, 
-  TextInput, 
-  ActivityIndicator, 
-  StyleSheet 
-} from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { FIRESTORE } from '../config/firebase';
+import { View, Text, FlatList, TouchableOpacity, Image, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { FIRESTORE, FIREBASE_STORAGE } from '../config/firebase';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { getDownloadURL, ref } from 'firebase/storage';
 import { FoodItem } from '../navigations/type';
 import { useCart } from '../context/CartContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList } from '../navigations/type';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type HomeScreenNavigationProp = StackNavigationProp<StackParamList, 'Home'>;
 
@@ -30,25 +22,47 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { addToCart } = useCart();
 
   useEffect(() => {
-    const foodsCollection = collection(FIRESTORE, 'foods');
-    const q = query(foodsCollection, orderBy('name'), limit(50)); // Adjust limit as needed
+    const fetchFoods = async () => {
+      const foodsCollection = collection(FIRESTORE, 'foods');
+      const q = query(foodsCollection, orderBy('name'), limit(50)); // Adjust limit as needed
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const foodList: FoodItem[] = [];
-      snapshot.forEach(doc => {
-        foodList.push({
-          id: doc.id,
-          ...(doc.data() as Omit<FoodItem, 'id'>),
-        });
-      });
-      setFoods(foodList);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching foods:', error);
-      setLoading(false);
-    });
+      const unsubscribe = onSnapshot(
+        q,
+        async (snapshot) => {
+          const foodList: FoodItem[] = [];
+          for (const doc of snapshot.docs) {
+            const foodData = doc.data() as Omit<FoodItem, 'id' | 'image'> & { imagePath: string };
+            const imagePath = foodData.imagePath; // Assuming imagePath is stored in Firestore
+            let imageUrl = '';
 
-    return () => unsubscribe();
+            if (imagePath) {
+              try {
+                const storageRef = ref(FIREBASE_STORAGE, imagePath);
+                imageUrl = await getDownloadURL(storageRef);
+              } catch (error) {
+                console.error('Error fetching image URL:', error);
+              }
+            }
+
+            foodList.push({
+              id: doc.id,
+              ...foodData,
+              image: imageUrl, // Add the fetched image URL
+            });
+          }
+          setFoods(foodList);
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Error fetching foods:', error);
+          setLoading(false);
+        }
+      );
+
+      return () => unsubscribe();
+    };
+
+    fetchFoods();
   }, []);
 
   const filteredFoods = foods.filter(food =>
@@ -60,13 +74,25 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.itemContainer}
       onPress={() => navigation.navigate('FoodDetail', { item })}
     >
-      <Image source={{ uri: item.image }} style={styles.itemImage} />
+      {item.image ? (
+        <Image source={{ uri: item.image }} style={styles.itemImage} />
+      ) : (
+        <View style={styles.placeholderImage}>
+          <Text style={styles.placeholderText}>No Image</Text>
+        </View>
+      )}
       <View style={styles.itemInfo}>
         <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemPrice}>{item.price}</Text>
+        <Text style={styles.itemPrice}>{item.price}đ</Text>
         <Text style={styles.itemRating}>
           ⭐ {item.rating} ({item.favorites})
         </Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => addToCart(item)}
+        >
+          <Text style={styles.addButtonText}>Add to Cart</Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   ), [navigation]);
@@ -77,11 +103,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.searchBar}>
           <Ionicons name="search" size={24} color="#888" />
           <TextInput
-            style={styles.searchInput}
-            placeholder="Search for any foods"
-            placeholderTextColor="#888"
+            placeholder="Search foods..."
             value={search}
             onChangeText={setSearch}
+            style={styles.searchInput}
           />
         </View>
       </View>
@@ -185,6 +210,16 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
   },
+  placeholderImage: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    color: '#fff',
+  },
   itemInfo: {
     flex: 1,
     padding: 10,
@@ -202,6 +237,24 @@ const styles = StyleSheet.create({
   itemRating: {
     fontSize: 14,
     color: '#555',
+  },
+  addButton: {
+    backgroundColor: '#ff8c00',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

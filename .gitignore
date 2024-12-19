@@ -37,3 +37,4 @@ yarn-error.*
 eas.json
 google-services.json
 app/config/firebase.ts
+*.zip

@@ -6,7 +6,8 @@ import {
   TouchableOpacity, 
   Image, 
   StyleSheet,
-  Alert 
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackParamList } from '../navigations/type';
@@ -24,7 +25,11 @@ type Props = {
 type UserData = {
   username: string;
   email: string;
-  profileImageURL: string | null;
+  profileImageURL?: string;
+  phone?: string;
+  address?: string;
+  birthdate?: string;
+  isAdmin?: boolean;
 };
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
@@ -34,10 +39,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [isOffline, setIsOffline] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsubscribeNetInfo = NetInfo.addEventListener(state => {
-      setIsOffline(!state.isConnected);
-    });
-
     const unsubscribeAuth = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -48,18 +49,23 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             setUserData(docSnap.data() as UserData);
           } else {
             console.log('No such document!');
+            setUserData(null);
           }
         } catch (error) {
           console.log('Error fetching user data:', error);
           Alert.alert('Error', 'Unable to fetch user data.');
+          setUserData(null);
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setUserData(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-
+  
     return () => {
       unsubscribeAuth();
-      unsubscribeNetInfo();
     };
   }, []);
 
@@ -105,20 +111,30 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {userData?.profileImageURL ? (
-        <Image source={{ uri: userData.profileImageURL }} style={styles.profileImage} />
+      {loading ? (
+        <ActivityIndicator size="large" color="#ff8c00" />
+      ) : userData ? (
+        <>
+          {userData.profileImageURL && (
+            <Image source={{ uri: userData.profileImageURL }} style={styles.profileImage} />
+          )}
+          <Text style={styles.username}>{userData.username}</Text>
+          <Text style={styles.email}>{userData.email}</Text>
+          {/* <Text style={styles.phone}>Phone: {userData.phone}</Text>
+          <Text style={styles.address}>Address: {userData.address}</Text> */}
+          <Text style={styles.birthdate}>Birthdate: {userData.birthdate}</Text>
+          <TouchableOpacity onPress={handleSignOut} style={styles.button}>
+            <Text style={styles.buttonText}>Sign Out</Text>
+          </TouchableOpacity>
+          {userData.isAdmin && (
+            <TouchableOpacity onPress={() => navigation.navigate('Admin')} style={styles.adminButton}>
+              <Text style={styles.adminButtonText}>Admin Panel</Text>
+            </TouchableOpacity>
+          )}
+        </>
       ) : (
-        <View style={styles.placeholderImage}>
-          <Text style={styles.placeholderText}>
-            {userData?.username?.charAt(0).toUpperCase() || 'U'}
-          </Text>
-        </View>
+        <Text>No user data available.</Text>
       )}
-      <Text style={styles.name}>{userData?.username || 'No Name'}</Text>
-      <Text style={styles.email}>{userData?.email}</Text>
-      <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -168,12 +184,17 @@ const styles = StyleSheet.create({
     fontSize: 40, 
     color: '#fff' 
   },
-  name: { 
+  username: { 
     fontSize: 24, 
     fontWeight: 'bold', 
     marginBottom: 10 
   },
   email: { 
+    fontSize: 18, 
+    color: '#555', 
+    marginBottom: 30 
+  },
+  birthdate: { 
     fontSize: 18, 
     color: '#555', 
     marginBottom: 30 
@@ -189,6 +210,18 @@ const styles = StyleSheet.create({
     textAlign: 'center', 
     fontSize: 16, 
     fontWeight: 'bold' 
+  },
+  adminButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 20,
+    width: '100%',
+  },
+  adminButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
 });
 
